@@ -1,4 +1,5 @@
 import com.fasterxml.jackson.databind.ObjectMapper;
+import repository.WeatherRepository;
 
 import java.io.IOException;
 import java.net.URI;
@@ -6,16 +7,19 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Scanner;
+import java.util.UUID;
 
 public class Weather {
 
-    public static String token;
+    public static String token = "f9b4ffde74b2860db5e2329ca98528ca";
 
     public static void main(String[] args) {
 
         System.out.println("Вас приветствует прогноз погоды!");
 
         Scanner scanner = new Scanner(System.in);
+
+        WeatherRepository.dbInit();
 
         while (true) {
 
@@ -68,12 +72,17 @@ public class Weather {
                 .uri(URI.create(uri))
                 .build();
 
+        UUID requestId = WeatherRepository.insertWeatherRequest(city);
+
         var response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
 
         ObjectMapper objectMapper = new ObjectMapper();
 
         WeatherResponse weatherResponse;
         weatherResponse = objectMapper.readValue(response.body(), WeatherResponse.class);
+
+        WeatherRepository.insertWeatherResponse(requestId, weatherResponse.getLocation().getCountry(), weatherResponse.getLocation().getName(),
+                weatherResponse.getCurrent().getTemperature(), weatherResponse.getCurrent().getWindSpeed());
 
         return "Country - " + weatherResponse.getLocation().getCountry() + "\n" +
                 "Location - " + weatherResponse.getLocation().getName() + "\n" +
